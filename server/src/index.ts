@@ -40,7 +40,7 @@ app.get("/api/leaderboard",(req,res)=>{
 app.get("/api/health",(_,res)=>res.json({ok:true,virtualOnly:true}));
 
 // Production: serve the built React app from the same server.
-const clientDist=path.resolve(process.cwd(),"client/dist");
+const clientDist = path.resolve(process.cwd(), "..", "..", "client", "dist");
 app.use(express.static(clientDist));
 app.use((req,res,next)=>{
   if(req.method==="GET" && !req.path.startsWith("/api")){
