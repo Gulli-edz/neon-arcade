@@ -2,7 +2,7 @@ import express from "express";
 import path from "node:path";
 import cors from "cors";
 import { z } from "zod";
-import { createUser,getUser,recordRound,db } from "./db.js";
+import { createUser,authenticateUser,getUser,recordRound,db } from "./db.js";
 import { resolve } from "./gameEngine.js";
 import type { GameId } from "./types.js";
 
@@ -10,7 +10,7 @@ const app=express();app.use(cors());app.use(express.json());
 const port=Number(process.env.PORT || 4000);
 const validGames=new Set<GameId>(["roulette","blackjack","slots","crash","coinflip","dice","plinko","wheel","higherlower","mines","keno","hilo","towers","memory","reaction","luckycards","numberguess","colormatch"]);
 
-app.post("/api/auth/demo",(req,res)=>{const p=z.object({username:z.string().trim().min(3).max(20).regex(/^[a-zA-Z0-9_ -]+$/),password:z.string().min(6).max(100)}).safeParse(req.body);if(!p.success)return res.status(400).json({error:"Invalid username"});res.json(createUser(p.data.username,p.data.password));});
+const authSchema=z.object({username:z.string().trim().min(3).max(20).regex(/^[a-zA-Z0-9_ -]+$/),password:z.string().min(6).max(100)}); app.post("/api/auth/register",(req,res)=>{const p=authSchema.safeParse(req.body);if(!p.success)return res.status(400).json({error:"Username must be 3-20 characters and password at least 6 characters."});try{res.json(createUser(p.data.username,p.data.password));}catch(err){return res.status(409).json({error:err instanceof Error?err.message:"Registration failed"});}}); app.post("/api/auth/login",(req,res)=>{const p=authSchema.safeParse(req.body);if(!p.success)return res.status(400).json({error:"Invalid username or password"});const u=authenticateUser(p.data.username,p.data.password);if(!u)return res.status(401).json({error:"Invalid username or password"});res.json(u);});
 app.get("/api/users/:id",(req,res)=>{const u=getUser(req.params.id);if(!u)return res.status(404).json({error:"User not found"});res.json(u);});
 app.post("/api/games/play",(req,res)=>{
  const p=z.object({userId:z.string().uuid(),gameId:z.string(),wager:z.number().int().min(1).max(1_000_000),choice:z.any().optional()}).safeParse(req.body);
@@ -50,3 +50,6 @@ app.use((req,res,next)=>{
 });
 
 app.listen(port,"0.0.0.0",()=>console.log(`Neon Arcade running on port ${port}`));
+
+
+
