@@ -10,7 +10,7 @@ const app=express();app.use(cors());app.use(express.json());
 const port=Number(process.env.PORT || 4000);
 const validGames=new Set<GameId>(["roulette","blackjack","slots","crash","coinflip","dice","plinko","wheel","higherlower","mines","keno","hilo","towers","memory","reaction","luckycards","numberguess","colormatch"]);
 
-app.post("/api/auth/demo",(req,res)=>{const p=z.object({username:z.string().trim().min(3).max(20).regex(/^[a-zA-Z0-9_ -]+$/)}).safeParse(req.body);if(!p.success)return res.status(400).json({error:"Invalid username"});res.json(createUser(p.data.username));});
+app.post("/api/auth/demo",(req,res)=>{const p=z.object({username:z.string().trim().min(3).max(20).regex(/^[a-zA-Z0-9_ -]+$/),password:z.string().min(6).max(100)}).safeParse(req.body);if(!p.success)return res.status(400).json({error:"Invalid username"});res.json(createUser(p.data.username,p.data.password));});
 app.get("/api/users/:id",(req,res)=>{const u=getUser(req.params.id);if(!u)return res.status(404).json({error:"User not found"});res.json(u);});
 app.post("/api/games/play",(req,res)=>{
  const p=z.object({userId:z.string().uuid(),gameId:z.string(),wager:z.number().int().min(1).max(1_000_000),choice:z.any().optional()}).safeParse(req.body);
@@ -40,7 +40,7 @@ app.get("/api/leaderboard",(req,res)=>{
 app.get("/api/health",(_,res)=>res.json({ok:true,virtualOnly:true}));
 
 // Production: serve the built React app from the same server.
-const clientDist = path.resolve(process.cwd(), "client", "dist");
+const clientDist = path.resolve(process.cwd(), "..", "client", "dist");
 app.use(express.static(clientDist));
 app.use((req,res,next)=>{
   if(req.method==="GET" && !req.path.startsWith("/api")){
