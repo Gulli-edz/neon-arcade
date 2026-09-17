@@ -57,6 +57,16 @@ CREATE TABLE IF NOT EXISTS achievements(
 CREATE INDEX IF NOT EXISTS idx_rounds_user ON rounds(user_id);
 `);
 
+const userColumns = db
+  .prepare("PRAGMA table_info(users)")
+  .all() as { name: string }[];
+
+if (!userColumns.some(column => column.name === "password_hash")) {
+  db.exec(
+    "ALTER TABLE users ADD COLUMN password_hash TEXT NOT NULL DEFAULT ''"
+  );
+}
+
 export const achievementDefs = [
   "First Win",
   "10 Games Played",
@@ -219,10 +229,7 @@ export function recordRound(
     wager,
     profit,
     Math.max(u.biggest_win, profit),
-    Math.max(
-      u.biggest_loss,
-      Math.abs(Math.min(0, profit))
-    ),
+    Math.max(u.biggest_loss, Math.abs(Math.min(0, profit))),
     ws,
     ls,
     Math.max(u.best_win_streak, ws),
@@ -249,10 +256,7 @@ export function recordRound(
     .prepare("SELECT * FROM users WHERE id=?")
     .get(userId) as any;
 
-  const unlock = (
-    name: string,
-    condition: boolean
-  ) => {
+  const unlock = (name: string, condition: boolean) => {
     if (condition) {
       db.prepare(
         "INSERT OR IGNORE INTO achievements(user_id,name) VALUES(?,?)"
